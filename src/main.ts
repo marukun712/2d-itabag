@@ -2,10 +2,10 @@ import {
 	byName,
 	curve,
 	drawCharacter,
-	getSpatialParams,
 	groupNodes,
 	KokoroFace,
 	KokoroRig,
+	POSE_TEMPLATE,
 	pipe,
 	psdGroup,
 	setupCanvas,
@@ -15,70 +15,6 @@ import {
 import gsap from "gsap";
 import { Container } from "pixi.js";
 import { Viewport } from "pixi-viewport";
-
-export const POSE_TEMPLATE: Template = {
-	left: (u, v) => {
-		const { fromLeft, fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		const baseTx = -100;
-		// 中央(u=0.5)ほど大きく変形する。係数を大きくするほど、中央がよりふくらむ。
-		const center = Math.sin(fromLeft * Math.PI) * 5;
-		const fakeParallax = -100 * center * curve.body(v);
-
-		return {
-			tx: baseTx + fakeParallax,
-			ty: Math.abs(0.5 - u) * -15 * curve.body(v),
-			w: w,
-		};
-	},
-	right: (u, v) => {
-		const { fromLeft, fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		const baseTx = 100;
-		const center = Math.sin(fromLeft * Math.PI) * 5;
-		const fakeParallax = 100 * center * curve.body(v);
-
-		return {
-			tx: baseTx + fakeParallax,
-			ty: Math.abs(0.5 - u) * -15 * curve.body(v),
-			w: w,
-		};
-	},
-	up: (u, v) => {
-		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		return {
-			tx: 0,
-			ty: -40,
-			w: w,
-		};
-	},
-	down: (u, v) => {
-		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		return {
-			tx: 0,
-			ty: 0,
-			w: w,
-		};
-	},
-	tiltLeft: (u, v) => {
-		const { fromTop } = getSpatialParams(u, v);
-		return {
-			tx: -250,
-			ty: 0,
-			w: curve.body(fromTop),
-		};
-	},
-	tiltRight: (u, v) => {
-		const { fromTop } = getSpatialParams(u, v);
-		return {
-			tx: 250,
-			ty: 0,
-			w: curve.body(fromTop),
-		};
-	},
-};
 
 export const HAIR_TEMPLATE: Template = {
 	swing: (_, v, t) => {
@@ -266,7 +202,7 @@ function blink() {
 }
 setTimeout(blink, 1000);
 
-const params = { x: 0.5, y: 0.5, tilt: 0.5 };
+const params = { x: 0.5, y: 0.5 };
 
 function randomMove() {
 	gsap.to(params, {
@@ -279,16 +215,10 @@ function randomMove() {
 }
 randomMove();
 
-window.addEventListener("deviceorientation", (e) => {
-	const gamma = e.gamma ?? 0;
-	params.tilt = Math.min(1, Math.max(0, (gamma + 45) / 90));
-});
-
 app.ticker.add(() => {
 	rig.setPose([
 		rig.lerpBlend("left", "right", params.x),
 		rig.lerpBlend("up", "down", params.y),
-		rig.lerpBlend("tiltLeft", "tiltRight", params.tilt),
 	]);
 	hairFrontRig.setPose([
 		hairFrontRig.lerpBlend("leftFront", "rightFront", params.x),
